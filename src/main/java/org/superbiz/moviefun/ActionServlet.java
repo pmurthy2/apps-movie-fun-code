@@ -17,6 +17,10 @@
 package org.superbiz.moviefun;
 
 import org.apache.commons.lang.StringUtils;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
+
 
 import javax.ejb.EJB;
 import javax.servlet.ServletException;
@@ -29,14 +33,22 @@ import java.util.List;
 /**
  * @version $Revision$ $Date$
  */
+@Component
 public class ActionServlet extends HttpServlet {
 
     private static final long serialVersionUID = -5832176047021911038L;
 
     public static int PAGE_SIZE = 5;
 
-    @EJB
+
     private MoviesBean moviesBean;
+    private final PlatformTransactionManager transactionManager;
+
+    public ActionServlet (MoviesBean moviesBean, PlatformTransactionManager transactionManager){
+        this.moviesBean=moviesBean;
+        this.transactionManager= transactionManager;
+
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -48,7 +60,13 @@ public class ActionServlet extends HttpServlet {
         process(request, response);
     }
 
-    private void process(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    private void process(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
+        TransactionStatus transaction =transactionManager.getTransaction(null);
+        processWithoutTransaction(request,response);
+        transactionManager.commit(transaction);
+    }
+
+    private void processWithoutTransaction(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String action = request.getParameter("action");
 
         if ("Add".equals(action)) {
